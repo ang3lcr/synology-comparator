@@ -1,0 +1,32 @@
+# Ambientes Virtuales
+venv/
+env/
+.env
+
+# Archivos compilados de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Base de datos SQLite (Cache)
+cache.db
+*.sqlite3
+
+# Logs
+*.log
+app.log
+
+# IDEs y Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos generados por el SO
+.DS_Store
+Thumbs.db
