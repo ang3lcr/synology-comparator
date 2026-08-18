@@ -1,4 +1,4 @@
-# Synology File Comparator
+# AD ASTRA
 
 Una aplicación de escritorio en Python/PySide6 para comparar una carpeta local de Windows/Linux contra una carpeta en un NAS Synology, utilizando las APIs oficiales de Synology.
 
@@ -30,8 +30,15 @@ Una aplicación de escritorio en Python/PySide6 para comparar una carpeta local 
 6. Haz clic en **COMPARAR ARCHIVOS**.
 7. Los resultados aparecerán en la tabla y se mostrará un resumen de archivos coincidentes, faltantes, diferentes y aquellos que solo existen en el NAS.
 
-## Fases de Desarrollo
+## Generar Archivo Ejecutable (.exe)
 
-* **Fase 1**: (Completada) Interfaz principal, conexión mediante `synology-api`, escaneo asíncrono y tabla de resultados.
-* **Fase 2**: (Pendiente) Optimización con SQLite, lotes, exportación a CSV/Excel.
-* **Fase 3**: (Pendiente) Verificación MD5 y subida de archivos faltantes.
+Para crear el archivo ejecutable portátil para Windows (que se puede usar en cualquier otra computadora sin instalar Python):
+
+```bash
+python build_exe.py
+```
+
+El archivo generado se ubicará en la carpeta:
+- `dist/AD ASTRA.exe`
+
+Puedes copiar y llevar directamente este único archivo `.exe` a cualquier otra computadora con Windows y ejecutarlo con doble clic.

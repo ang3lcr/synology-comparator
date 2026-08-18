@@ -1,7 +1,7 @@
 from PySide6.QtCore import QThread, Signal
 from app.synology.client import SynologyClient
 import os
-import time
+import logging
 
 class UploaderWorker(QThread):
     progress = Signal(str, int)
@@ -31,31 +31,37 @@ class UploaderWorker(QThread):
                 self.progress.emit(f"Subiendo {i+1}/{total_files}: {res.name}", int((i/total_files)*100))
                 
                 local_full_path = os.path.join(self.base_local_path, res.path).replace("\\", "/")
-                # Calculate remote destination folder (removing the filename from the end)
                 remote_full_path = self.base_remote_path
                 relative_dir = os.path.dirname(res.path).replace("\\", "/")
                 if relative_dir:
                     remote_full_path = f"{self.base_remote_path}/{relative_dir}"
                 
-                # We tell synology-api to upload. The upload method signature depends on the version.
-                # Usually it's upload_file(dest_path, file_path, create_parents=True, overwrite=False)
-                # We'll use our wrapper.
-                
                 if not os.path.exists(local_full_path):
+                    logging.warning(f"Archivo local no existe: {local_full_path}")
                     failed += 1
                     continue
                     
                 overwrite_flag = True if self.overwrite == "SI" else False
                 
                 try:
-                    self.client.upload_file(local_full_path, remote_full_path, overwrite_flag)
-                    success += 1
+                    res_upload = self.client.upload_file(local_full_path, remote_full_path, overwrite_flag)
+                    if isinstance(res_upload, tuple):
+                        status_code, err_data = res_upload
+                        logging.error(f"Error subiendo {res.name} (HTTP {status_code}): {err_data}")
+                        failed += 1
+                    elif isinstance(res_upload, dict) and not res_upload.get('success', False):
+                        logging.error(f"Error subiendo {res.name}: {res_upload}")
+                        failed += 1
+                    else:
+                        logging.info(f"Subido con éxito: {res.name} -> {remote_full_path}")
+                        success += 1
                 except Exception as e:
-                    print(f"Error subiendo {res.name}: {e}")
+                    logging.error(f"Error subiendo {res.name}: {e}", exc_info=True)
                     failed += 1
 
             self.progress.emit("Subida finalizada.", 100)
             self.finished.emit(success, failed)
             
         except Exception as e:
+            logging.error(f"Error general en UploaderWorker: {e}", exc_info=True)
             self.error.emit(str(e))

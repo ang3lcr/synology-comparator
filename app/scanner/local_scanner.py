@@ -1,4 +1,5 @@
 import os
+import logging
 from typing import List
 from app.database.models import FileMetadata
 from datetime import datetime
@@ -34,6 +35,6 @@ class LocalScanner:
                         is_dir=False
                     ))
                 except Exception as e:
-                    print(f"Error leyendo archivo {full_path}: {e}")
+                    logging.warning(f"Error leyendo archivo {full_path}: {e}")
                     
         return files_metadata

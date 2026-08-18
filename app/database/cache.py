@@ -1,11 +1,16 @@
 import sqlite3
 import os
+import sys
 from datetime import datetime
 from typing import Optional, Dict
 
 class FileCache:
     def __init__(self, db_path: str = "cache.db"):
-        self.db_path = db_path
+        if getattr(sys, 'frozen', False) and db_path == "cache.db":
+            base_dir = os.path.dirname(sys.executable)
+            self.db_path = os.path.join(base_dir, "cache.db")
+        else:
+            self.db_path = db_path
         self._init_db()
 
     def _init_db(self):

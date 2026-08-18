@@ -1,4 +1,5 @@
 import os
+import logging
 from typing import List, Optional
 from synology_api import filestation
 import urllib.parse
@@ -51,13 +52,12 @@ class SynologyClient:
                 secure=secure, 
                 cert_verify=False, 
                 dsm_version=7,
-                debug=True,
+                debug=False,
                 quickconnect_id=quickconnect_id
             )
             return True
         except Exception as e:
-            # synology-api might throw exception on failure
-            print(f"Error conectando a Synology: {e}")
+            logging.error(f"Error conectando a Synology: {e}")
             raise
 
     def list_folder(self, path: str, offset: int = 0, limit: int = 1000) -> dict:
@@ -119,5 +119,5 @@ class SynologyClient:
                 
                 time.sleep(1)
         except Exception as e:
-            print(f"Error obteniendo MD5 remoto para {remote_file_path}: {e}")
+            logging.error(f"Error obteniendo MD5 remoto para {remote_file_path}: {e}")
             return ""

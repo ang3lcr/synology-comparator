@@ -1,5 +1,6 @@
 import hashlib
 import os
+import logging
 
 class Hashing:
     @staticmethod
@@ -11,5 +12,5 @@ class Hashing:
                     md5_hash.update(chunk)
             return md5_hash.hexdigest()
         except Exception as e:
-            print(f"Error calculating MD5 for {file_path}: {e}")
+            logging.error(f"Error calculando MD5 para {file_path}: {e}")
             return ""

@@ -16,7 +16,7 @@ from datetime import datetime
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Synology File Comparator")
+        self.setWindowTitle("AD ASTRA")
         self.resize(1100, 750)
         
         self.synology_client = None
