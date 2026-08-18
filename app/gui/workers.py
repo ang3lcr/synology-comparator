@@ -25,19 +25,24 @@ class CompareWorker(QThread):
 
     def run(self):
         try:
-            self.progress.emit("Escaneando carpeta local...", 0)
+            self.progress.emit("Escaneando carpeta local...", -1)
+            
+            def local_progress(count):
+                if self.is_cancelled:
+                    raise Exception("Cancelado por el usuario")
+                self.progress.emit(f"Escaneando carpeta local... ({count} archivos)", -1)
+                
             local_scanner = LocalScanner(self.local_path)
-            local_files = local_scanner.scan()
+            local_files = local_scanner.scan(local_progress)
             
             if self.is_cancelled: return
 
-            self.progress.emit(f"Encontrados {len(local_files)} archivos locales. Consultando NAS...", 20)
+            self.progress.emit(f"Encontrados {len(local_files)} archivos locales. Consultando NAS...", -1)
             
             def remote_progress(count, total):
                 if self.is_cancelled:
                     raise Exception("Cancelado por el usuario")
-                # Indeterminate progress or based on items found
-                self.progress.emit(f"Consultando NAS... ({count} archivos encontrados)", 40)
+                self.progress.emit(f"Consultando NAS... ({count} archivos encontrados)", -1)
             
             remote_scanner = RemoteScanner(self.client, self.remote_path)
             remote_files = remote_scanner.scan(remote_progress)
@@ -46,10 +51,17 @@ class CompareWorker(QThread):
 
             self.progress.emit("Comparando archivos...", 80)
             
-            def comp_progress(msg):
+            def comp_progress(msg, progress_percent=None):
                 if self.is_cancelled:
                     raise Exception("Cancelado por el usuario")
-                self.progress.emit(msg, 90)
+                
+                if progress_percent is not None:
+                    # El progreso de la comparación tomará del 80% al 100% de la barra total
+                    overall_prog = 80 + int(progress_percent * 0.20)
+                else:
+                    overall_prog = 90
+                
+                self.progress.emit(msg, overall_prog)
                 
             results = FileComparator.compare(
                 local_files, 
@@ -61,7 +73,18 @@ class CompareWorker(QThread):
                 comp_progress
             )
             
-            self.progress.emit("Comparación completada.", 100)
+            self.progress.emit("Comparación completada. Guardando caché...", -1)
+            
+            if self.cache:
+                def cache_progress(count, total):
+                    if self.is_cancelled:
+                        raise Exception("Cancelado por el usuario")
+                    # Progress is very fast, so indeterminate is fine, or we can just emit count
+                    self.progress.emit(f"Guardando caché... ({count}/{total})", -1)
+                    
+                self.cache.save_cache_bulk(results, cache_progress)
+            
+            self.progress.emit("Proceso finalizado.", 100)
             self.finished.emit(results)
             
         except Exception as e:

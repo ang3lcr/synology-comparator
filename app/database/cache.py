@@ -36,6 +36,30 @@ class FileCache:
             ''', (local_path, remote_path, rel_path, size, mod_time_str, file_hash, status, last_checked))
             conn.commit()
 
+    def save_cache_bulk(self, results, progress_callback=None):
+        last_checked = datetime.now().isoformat()
+        
+        with sqlite3.connect(self.db_path) as conn:
+            total = len(results)
+            chunk_size = 1000
+            for i in range(0, total, chunk_size):
+                chunk = results[i:i+chunk_size]
+                data = []
+                for res in chunk:
+                    mod_time_str = res.mod_time_local.isoformat() if res.mod_time_local else None
+                    size = res.size_local or res.size_nas or 0
+                    data.append(("", "", res.path, size, mod_time_str, None, res.status, last_checked))
+                
+                conn.executemany('''
+                    INSERT OR REPLACE INTO file_cache 
+                    (local_path, remote_path, rel_path, size, mod_time, file_hash, status, last_checked)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', data)
+                
+                if progress_callback:
+                    progress_callback(min(i + chunk_size, total), total)
+            conn.commit()
+
     def get_cache(self, rel_path: str) -> Optional[dict]:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()

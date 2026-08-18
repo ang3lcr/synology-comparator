@@ -17,9 +17,14 @@ class FileComparator:
         local_dict = {f.path: f for f in local_files if not f.is_dir}
         remote_dict = {f.path: f for f in remote_files if not f.is_dir}
         
-        all_paths = set(local_dict.keys()).union(set(remote_dict.keys()))
+        all_paths = list(set(local_dict.keys()).union(set(remote_dict.keys())))
+        total_files = len(all_paths)
         
-        for path in all_paths:
+        for i, path in enumerate(all_paths):
+            if i % max(1, total_files // 100) == 0 or i == total_files - 1:
+                if progress_callback:
+                    progress_callback(f"Comparando archivo {i+1} de {total_files}...", int((i / total_files) * 100) if total_files > 0 else 100)
+
             local = local_dict.get(path)
             remote = remote_dict.get(path)
             
@@ -31,7 +36,7 @@ class FileComparator:
                 else:
                     if deep_verify and client:
                         if progress_callback:
-                            progress_callback(f"Verificando MD5 para {local.name}...")
+                            progress_callback(f"Verificando MD5 para {local.name}...", int((i / total_files) * 100) if total_files > 0 else 100)
                         local_md5 = Hashing.compute_local_md5(os.path.join(base_local_path, local.path))
                         # Determine remote path
                         rel_dir = os.path.dirname(local.path).replace("\\", "/")

@@ -196,22 +196,29 @@ class MainWindow(QMainWindow):
 
     def update_progress(self, msg: str, val: int):
         self.lbl_progress.setText(msg)
-        self.progress_bar.setValue(val)
+        if val == -1:
+            self.progress_bar.setRange(0, 0)
+        else:
+            self.progress_bar.setRange(0, 100)
+            self.progress_bar.setValue(val)
         
     def comparison_finished(self, results: list):
         self.btn_compare.setEnabled(True)
         self.btn_cancel.setEnabled(False)
         self.btn_upload.setEnabled(True)
-        self.progress_bar.setValue(100)
         
         self.all_results = results
         logging.info(f"Comparación finalizada. {len(results)} archivos procesados.")
         
-        # Save to cache
-        for res in results:
-            self.cache.save_cache(res.path, "", "", res.size_local or res.size_nas or 0, res.mod_time_local, res.status)
+        self.update_progress("Renderizando resultados en la tabla...", -1)
         
+        # Give UI a moment to show the message before doing the heavy table population
+        import PySide6.QtCore as QtCore
+        QtCore.QTimer.singleShot(50, lambda: self._finish_ui_population())
+
+    def _finish_ui_population(self):
         self.apply_filter(self.cmb_filter.currentText())
+        self.update_progress("Completado", 100)
         
     def apply_filter(self, status: str):
         self.table.setRowCount(0)
@@ -254,23 +261,39 @@ class MainWindow(QMainWindow):
         self.btn_cancel.setEnabled(False)
         QMessageBox.critical(self, "Error", f"Ocurrió un error: {error_msg}")
         
+    def _get_current_results(self):
+        status = self.cmb_filter.currentText()
+        if status == "Todos":
+            return self.all_results
+        return [r for r in self.all_results if r.status == status]
+
     def export_csv(self):
-        if not self.all_results: return
+        results = self._get_current_results()
+        if not results: 
+            QMessageBox.information(self, "Info", "No hay datos para exportar.")
+            return
         file_path, _ = QFileDialog.getSaveFileName(self, "Exportar a CSV", "", "CSV Files (*.csv)")
         if file_path:
+            if not file_path.lower().endswith('.csv'):
+                file_path += '.csv'
             try:
-                Exporter.export_to_csv(self.all_results, file_path)
+                Exporter.export_to_csv(results, file_path)
                 QMessageBox.information(self, "Éxito", "Exportado correctamente.")
                 logging.info(f"Exportado CSV: {file_path}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"No se pudo exportar: {e}")
                 
     def export_excel(self):
-        if not self.all_results: return
+        results = self._get_current_results()
+        if not results: 
+            QMessageBox.information(self, "Info", "No hay datos para exportar.")
+            return
         file_path, _ = QFileDialog.getSaveFileName(self, "Exportar a Excel", "", "Excel Files (*.xlsx)")
         if file_path:
+            if not file_path.lower().endswith('.xlsx'):
+                file_path += '.xlsx'
             try:
-                Exporter.export_to_excel(self.all_results, file_path)
+                Exporter.export_to_excel(results, file_path)
                 QMessageBox.information(self, "Éxito", "Exportado correctamente.")
                 logging.info(f"Exportado Excel: {file_path}")
             except Exception as e:

@@ -7,12 +7,16 @@ class LocalScanner:
     def __init__(self, base_path: str):
         self.base_path = os.path.normpath(base_path)
 
-    def scan(self) -> List[FileMetadata]:
+    def scan(self, progress_callback=None) -> List[FileMetadata]:
         files_metadata = []
         
         for root, dirs, files in os.walk(self.base_path):
             for file in files:
                 full_path = os.path.join(root, file)
+                
+                if progress_callback and len(files_metadata) % 100 == 0:
+                    progress_callback(len(files_metadata))
+                    
                 rel_path = os.path.relpath(full_path, self.base_path)
                 
                 # Normalize slashes for comparison
